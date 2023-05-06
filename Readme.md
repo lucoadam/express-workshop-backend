@@ -35,3 +35,7 @@ A simple express server for API
 ## API checks
 1. Postman
 2. Thunderclient (VSCode)
+
+## Deployment
+
+1. Using Heroku
