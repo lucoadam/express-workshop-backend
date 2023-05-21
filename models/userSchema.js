@@ -8,7 +8,20 @@ const schema = mongoose.Schema(
       },
       age: {
           type: Number,
+          required: false
+      },
+      email: {
+          type: String,
+          required: true,
+          unique: true
+      },
+      password: {
+          type: String,
           required: true
+      },
+      address: {
+        type: String,
+        required: true
       }
     },
   );

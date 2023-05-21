@@ -1,8 +1,49 @@
 import { Router } from "express";
 import userSchema from "../models/userSchema.js";
+import { hashPassword } from "../utils/hashPassword.js";
 
 
 const router = Router()
+
+async function registerUser(req, res) {
+    // posted data validity
+    const {name, password, email, address} = req.body
+    if(!name || !password || !email || !address){
+        return res.status(400).json({
+            success: false,
+            message: "Missing required fields"
+        })
+    }
+
+    // check if db contain user
+    const userExists = await userSchema.exists({
+        email
+    })
+
+    if(userExists){
+        return res.status(400).json({
+            success: false,
+            message: "User with email already exists"
+        })
+    }
+
+
+    // hash password and store to database
+    const user = userSchema({
+        name, password: await hashPassword(password), email, address
+    })
+    await user.save()
+ 
+    // return success response
+    return res.json(
+        {
+            success: true,
+            message: "User created successfully."
+        }
+    )
+}
+
+router.post("/register", registerUser)
 
 /**
  * GET api for fetching all users
