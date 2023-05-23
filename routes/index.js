@@ -1,14 +1,17 @@
 import { Router } from "express";
 import userSchema from "../models/userSchema.js";
 import { hashPassword } from "../utils/hashPassword.js";
+import { checkPassword } from "../utils/checkPassword.js";
+import { generateToken } from "../utils/token.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 
 const router = Router()
 
 async function registerUser(req, res) {
     // posted data validity
-    const {name, password, email, address} = req.body
-    if(!name || !password || !email || !address){
+    const { name, password, email, address } = req.body
+    if (!name || !password || !email || !address) {
         return res.status(400).json({
             success: false,
             message: "Missing required fields"
@@ -20,7 +23,7 @@ async function registerUser(req, res) {
         email
     })
 
-    if(userExists){
+    if (userExists) {
         return res.status(400).json({
             success: false,
             message: "User with email already exists"
@@ -33,7 +36,7 @@ async function registerUser(req, res) {
         name, password: await hashPassword(password), email, address
     })
     await user.save()
- 
+
     // return success response
     return res.json(
         {
@@ -45,15 +48,55 @@ async function registerUser(req, res) {
 
 router.post("/register", registerUser)
 
+
+async function loginUser(req, res) {
+    const { email, password } = req.body
+    // check if db contain user
+    const dbUser = await userSchema.findOne({
+        email
+    })
+
+    if (!dbUser) {
+        return res.status(400).json({
+            success: false,
+            message: "User with email doesnot exists"
+        })
+    }
+    // check if password is correct
+    const isPasswordCorrect = await checkPassword(password, dbUser.password)
+
+    if (!isPasswordCorrect) {
+        return res.status(400).json({
+            success: false,
+            message: "Password is incorrect"
+        })
+    }
+    // generate access token for user
+    const accessToken = generateToken({
+        email,
+        address: dbUser.address,
+        _id: dbUser._id,
+    });
+
+    return res.json({
+        success: true,
+        message: "User logged in successfully.",
+        data: {
+            accessToken
+        }
+    })
+}
+router.post("/login", loginUser)
 /**
  * GET api for fetching all users
  */
 async function getAllUsers(req, res) {
+    console.log('from get users', req.user)
     const users = await userSchema.find();
     res.json(users);
     res.end();
 }
-router.get('/users', getAllUsers);
+router.get('/users', authMiddleware, getAllUsers);
 
 /**
  * GET api for fetching a user by id 
