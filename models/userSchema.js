@@ -22,6 +22,15 @@ const schema = mongoose.Schema(
       address: {
         type: String,
         required: true
+      },
+      role: {
+        type: String,
+        required: false,
+        default: "user"
+      },
+      lastLoggedIn: {
+        type: Date,
+        required: false
       }
     },
   );

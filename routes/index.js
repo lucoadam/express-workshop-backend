@@ -33,7 +33,10 @@ async function registerUser(req, res) {
 
     // hash password and store to database
     const user = userSchema({
-        name, password: await hashPassword(password), email, address
+        name, 
+        password: await hashPassword(password), 
+        email, 
+        address
     })
     await user.save()
 
@@ -82,7 +85,8 @@ async function loginUser(req, res) {
         success: true,
         message: "User logged in successfully.",
         data: {
-            accessToken
+            accessToken,
+            role: dbUser.role || "user"
         }
     })
 }
@@ -114,14 +118,37 @@ router.get('/users/:id', getUserById);
  * POST api for creating a new user
  */
 async function addUser(req, res) {
-    const { name, age } = req.body;
+    const { name, age, email, address, role } = req.body;
+
+    if(!name || !age || !email || !address || !role) {
+        return res.status(400).json({
+            success: false,
+            message: "Missing required fields"
+        })
+    }
+
+    const userExists = await userSchema.exists({
+        email
+    })
+
+    if (userExists) {
+        return res.status(400).json({
+            success: false,
+            message: "User with email already exists"
+        })
+    }
+
     const user = await userSchema.create({
         name,
-        age
+        age,
+        email,
+        address,
+        password: await hashPassword(address),
+        role
     });
     return res.json(user);
 }
-router.post('/users', addUser);
+router.post('/users', authMiddleware, addUser);
 
 /**
  * PUT api for updating a user by id
